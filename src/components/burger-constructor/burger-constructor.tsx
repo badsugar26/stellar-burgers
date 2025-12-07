@@ -1,43 +1,89 @@
+// components/burger-constructor/burger-constructor.tsx
 import { FC, useMemo } from 'react';
-import { TConstructorIngredient } from '@utils-types';
 import { BurgerConstructorUI } from '@ui';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { TIngredient } from '@utils-types';
+import { AppDispatch, RootState } from '../../services/store';
+import { clearOrder, createOrder } from '../../services/slices/orderSlice';
+import { clearConstructor } from '../../services/slices/burgerConstructorSlice';
+import { fetchProfileOrders } from '../../services/slices/profileOrdersSlice';
+
+// Определите локальный тип, если нужно
+type TConstructorIngredient = TIngredient & { id: string };
 
 export const BurgerConstructor: FC = () => {
-  /** TODO: взять переменные constructorItems, orderRequest и orderModalData из стора */
-  const constructorItems = {
-    bun: {
-      price: 0
-    },
-    ingredients: []
-  };
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
 
-  const orderRequest = false;
-
-  const orderModalData = null;
-
-  const onOrderClick = () => {
-    if (!constructorItems.bun || orderRequest) return;
-  };
-  const closeOrderModal = () => {};
-
-  const price = useMemo(
-    () =>
-      (constructorItems.bun ? constructorItems.bun.price * 2 : 0) +
-      constructorItems.ingredients.reduce(
-        (s: number, v: TConstructorIngredient) => s + v.price,
-        0
-      ),
-    [constructorItems]
+  const { bun, ingredients } = useSelector(
+    (state: RootState) => state.burgerConstructor
   );
 
-  return null;
+  const { order, orderRequest, loading } = useSelector(
+    (state: RootState) => state.order
+  );
+
+  const { user } = useSelector((state: RootState) => state.user);
+
+  const onOrderClick = () => {
+    if (!bun || orderRequest) return;
+
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    const ingredientIds = [
+      bun._id,
+      ...ingredients.map((item) => item._id),
+      bun._id
+    ];
+
+    // ИЗМЕНИТЕ ЭТУ ЧАСТЬ:
+    dispatch(createOrder(ingredientIds))
+      .unwrap()
+      .then(() => {
+        console.log('Заказ успешно создан!');
+
+        // ОБНОВЛЯЕМ ИСТОРИЮ ЗАКАЗОВ ПОЛЬЗОВАТЕЛЯ
+        dispatch(fetchProfileOrders());
+
+        // Можно также обновить ленту всех заказов, если есть такой слайс
+        // dispatch(fetchFeed()); // если у вас есть feedSlice
+      })
+      .catch((error) => {
+        console.error('Ошибка при создании заказа:', error);
+      });
+  };
+
+  const closeOrderModal = () => {
+    dispatch(clearOrder());
+    dispatch(clearConstructor());
+  };
+
+  // Используйте правильный тип в reduce
+  const price = useMemo(
+    () =>
+      (bun ? bun.price * 2 : 0) +
+      ingredients.reduce(
+        (s: number, v: TIngredient) => s + v.price, // Используйте TIngredient
+        0
+      ),
+    [bun, ingredients]
+  );
+
+  const constructorItems = {
+    bun,
+    ingredients
+  };
 
   return (
     <BurgerConstructorUI
       price={price}
-      orderRequest={orderRequest}
+      orderRequest={orderRequest || loading}
       constructorItems={constructorItems}
-      orderModalData={orderModalData}
+      orderModalData={order}
       onOrderClick={onOrderClick}
       closeOrderModal={closeOrderModal}
     />

@@ -1,21 +1,52 @@
-import { FC, useMemo } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
-import { TIngredient } from '@utils-types';
+import { TIngredient, TOrder } from '@utils-types';
+import { useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from 'src/services/store';
+import { getOrderByNumberApi } from '@api';
 
 export const OrderInfo: FC = () => {
-  /** TODO: взять переменные orderData и ingredients из стора */
-  const orderData = {
-    createdAt: '',
-    ingredients: [],
-    _id: '',
-    status: '',
-    name: '',
-    updatedAt: 'string',
-    number: 0
-  };
+  const { number } = useParams<{ number: string }>();
+  const [orderData, setOrderData] = useState<TOrder | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const ingredients: TIngredient[] = [];
+  const ingredients: TIngredient[] = useSelector(
+    (state: RootState) => state.ingredients.items
+  );
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      if (!number) {
+        setError('Номер заказа не указан');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const orderNumber = Number(number);
+        const response = await getOrderByNumberApi(orderNumber);
+
+        if (response.success && response.orders.length > 0) {
+          setOrderData(response.orders[0]);
+        } else {
+          setError('Заказ не найден');
+        }
+      } catch (err) {
+        setError('Ошибка при загрузке заказа');
+        console.error('Error fetching order:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [number]);
 
   /* Готовим данные для отображения */
   const orderInfo = useMemo(() => {
