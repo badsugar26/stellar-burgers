@@ -22,13 +22,13 @@ import {
 
 import { AppHeader, IngredientDetails, Modal, OrderInfo } from '@components';
 import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../services/store';
+import { useDispatch, useSelector } from '../../services/store';
 import { getUser } from '../../services/slices/userSlice';
+import { fetchIngredients } from '../../services/slices/ingredientsSlice';
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const location = useLocation();
-  const { user, isAuthChecked } = useSelector((state: RootState) => state.user);
+  const { user, isAuthChecked } = useSelector((state) => state.user);
 
   if (!isAuthChecked) {
     return <div>Проверка авторизации...</div>;
@@ -44,11 +44,13 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 const App = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch();
 
   const background = location.state && location.state.background;
 
   useEffect(() => {
+    dispatch(fetchIngredients());
+
     dispatch(getUser());
   }, [dispatch]);
 

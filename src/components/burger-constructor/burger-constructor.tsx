@@ -1,30 +1,24 @@
 // components/burger-constructor/burger-constructor.tsx
 import { FC, useMemo } from 'react';
 import { BurgerConstructorUI } from '@ui';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { TIngredient } from '@utils-types';
-import { AppDispatch, RootState } from '../../services/store';
+import { useDispatch, useSelector } from '../../services/store';
 import { clearOrder, createOrder } from '../../services/slices/orderSlice';
-import { clearConstructor } from '../../services/slices/burgerConstructorSlice';
 import { fetchProfileOrders } from '../../services/slices/profileOrdersSlice';
 
 // Определите локальный тип, если нужно
 type TConstructorIngredient = TIngredient & { id: string };
 
 export const BurgerConstructor: FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { bun, ingredients } = useSelector(
-    (state: RootState) => state.burgerConstructor
-  );
+  const { bun, ingredients } = useSelector((state) => state.burgerConstructor);
 
-  const { order, orderRequest, loading } = useSelector(
-    (state: RootState) => state.order
-  );
+  const { order, orderRequest, loading } = useSelector((state) => state.order);
 
-  const { user } = useSelector((state: RootState) => state.user);
+  const { user } = useSelector((state) => state.user);
 
   const onOrderClick = () => {
     if (!bun || orderRequest) return;
@@ -59,7 +53,6 @@ export const BurgerConstructor: FC = () => {
 
   const closeOrderModal = () => {
     dispatch(clearOrder());
-    dispatch(clearConstructor());
   };
 
   // Используйте правильный тип в reduce

@@ -3,12 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { BurgerIngredientUI } from '@ui';
 import { TBurgerIngredientProps } from './type';
-import { AppDispatch, RootState, useDispatch } from '../../services/store';
+import { useDispatch, useSelector } from '../../services/store';
 import {
   addBun,
   addIngredient
 } from '../../services/slices/burgerConstructorSlice';
-import { useSelector } from 'react-redux';
 
 export const BurgerIngredient: FC<TBurgerIngredientProps> = memo(
   ({ ingredient, count }) => {
@@ -24,7 +23,7 @@ export const BurgerIngredient: FC<TBurgerIngredientProps> = memo(
     };
 
     const { bun, ingredients: constructorIngredients } = useSelector(
-      (state: RootState) => state.burgerConstructor
+      (state) => state.burgerConstructor
     );
 
     const actualCount = () => {

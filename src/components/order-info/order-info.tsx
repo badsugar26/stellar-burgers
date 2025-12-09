@@ -3,8 +3,7 @@ import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
 import { TIngredient, TOrder } from '@utils-types';
 import { useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from 'src/services/store';
+import { useSelector } from '../../services/store';
 import { getOrderByNumberApi } from '@api';
 
 export const OrderInfo: FC = () => {
@@ -14,7 +13,7 @@ export const OrderInfo: FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const ingredients: TIngredient[] = useSelector(
-    (state: RootState) => state.ingredients.items
+    (state) => state.ingredients.items
   );
 
   useEffect(() => {
@@ -90,8 +89,24 @@ export const OrderInfo: FC = () => {
     };
   }, [orderData, ingredients]);
 
-  if (!orderInfo) {
+  if (loading) {
     return <Preloader />;
+  }
+
+  if (error) {
+    return (
+      <div className='text text_type_main-default text_color_inactive'>
+        {error}
+      </div>
+    );
+  }
+
+  if (!orderInfo) {
+    return (
+      <div className='text text_type_main-default text_color_inactive'>
+        Заказ не найден
+      </div>
+    );
   }
 
   return <OrderInfoUI orderInfo={orderInfo} />;

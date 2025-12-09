@@ -1,30 +1,19 @@
 import { FC, useEffect } from 'react';
 import { Preloader } from '../ui/preloader';
 import { IngredientDetailsUI } from '../ui/ingredient-details';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from 'src/services/store';
+import { useDispatch, useSelector } from '../../services/store';
 import { useParams } from 'react-router-dom';
-import {
-  fetchIngredients,
-  setCurrentIngredient
-} from '../../services/slices/ingredientsSlice';
+import { setCurrentIngredient } from '../../services/slices/ingredientsSlice';
 
 export const IngredientDetails: FC = () => {
   /** TODO: взять переменную из стора */
   const { id } = useParams<{ id: string }>();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch();
 
   // Правильно получаем данные из store
   const { items, currentIngredient, loading } = useSelector(
-    (state: RootState) => state.ingredients
+    (state) => state.ingredients
   );
-
-  useEffect(() => {
-    // Если ингредиенты еще не загружены, загружаем их
-    if (items.length === 0) {
-      dispatch(fetchIngredients());
-    }
-  }, [dispatch, items.length]);
 
   useEffect(() => {
     // Устанавливаем текущий ингредиент по ID

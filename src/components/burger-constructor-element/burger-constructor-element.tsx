@@ -5,12 +5,11 @@ import {
   moveIngredient,
   removeIngredient
 } from '../../services/slices/burgerConstructorSlice';
-import { AppDispatch } from '../../services/store';
-import { useDispatch } from 'react-redux';
+import { useDispatch } from '../../services/store';
 
 export const BurgerConstructorElement: FC<BurgerConstructorElementProps> = memo(
   ({ ingredient, index, totalItems }) => {
-    const dispatch = useDispatch<AppDispatch>();
+    const dispatch = useDispatch();
 
     const handleMoveDown = () => {
       if (index < totalItems - 1) {

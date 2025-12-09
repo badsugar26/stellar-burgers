@@ -3,22 +3,13 @@ import { useInView } from 'react-intersection-observer';
 
 import { TIngredient, TTabMode } from '@utils-types';
 import { BurgerIngredientsUI } from '../ui/burger-ingredients';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../services/store';
-import { fetchIngredients } from '../../services/slices/ingredientsSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../services/store';
 
 export const BurgerIngredients: FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-
   const { items, loading } = useSelector(
     (state: RootState) => state.ingredients
   );
-
-  useEffect(() => {
-    if (items.length === 0) {
-      dispatch(fetchIngredients());
-    }
-  }, [dispatch, items.length]);
 
   // Фильтруем ингредиенты по категориям
   const buns = items.filter((item) => item.type === 'bun');
@@ -61,8 +52,6 @@ export const BurgerIngredients: FC = () => {
     if (tab === 'sauce')
       titleSaucesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  // return null;
 
   if (loading) {
     return <div>Загрузка ингредиентов...</div>;

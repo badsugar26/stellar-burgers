@@ -1,7 +1,8 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { orderBurgerApi } from '../../utils/burger-api';
 import { TOrder } from '@utils-types';
 import { getCookie } from '../../utils/cookie';
+import { clearConstructor } from './burgerConstructorSlice';
 
 const ensureBearerToken = () => {
   const token = getCookie('accessToken');
@@ -10,7 +11,7 @@ const ensureBearerToken = () => {
 
 export const createOrder = createAsyncThunk(
   'order/create',
-  async (ingredientIds: string[], { rejectWithValue }) => {
+  async (ingredientIds: string[], { rejectWithValue, dispatch }) => {
     try {
       const token = ensureBearerToken();
       if (!token) {
@@ -38,10 +39,16 @@ export const createOrder = createAsyncThunk(
         throw new Error(data.message || 'Ошибка создания заказа');
       }
 
+      dispatch(clearConstructor());
+
       return data.order;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Create order error:', error);
-      return rejectWithValue(error.message || 'Ошибка создания заказа');
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Ошибка создания заказа';
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -67,7 +74,7 @@ const orderSlice = createSlice({
     clearOrder: (state) => {
       state.order = null;
     },
-    setOrderRequest: (state, action) => {
+    setOrderRequest: (state, action: PayloadAction<boolean>) => {
       state.orderRequest = action.payload;
     }
   },

@@ -1,19 +1,11 @@
 import { ProfileUI } from '@ui-pages';
 import { FC, SyntheticEvent, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../services/store';
+import { useDispatch, useSelector } from '../../services/store';
 import { updateUser } from '../../services/slices/userSlice';
-import { Preloader } from '@ui';
 
 export const Profile: FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { user, loading, error } = useSelector(
-    (state: RootState) => state.user
-  );
-
-  if (loading || !user) {
-    return <Preloader />;
-  }
+  const dispatch = useDispatch();
+  const { user, error } = useSelector((state) => state.user);
 
   const [formValue, setFormValue] = useState({
     name: user?.name || '',
@@ -54,7 +46,7 @@ export const Profile: FC = () => {
     if (!isFormChanged) return;
 
     // Подготавливаем данные для отправки
-    const updateData: any = {};
+    const updateData: { name?: string; email?: string; password?: string } = {};
 
     if (formValue.name !== originalValues.name) {
       updateData.name = formValue.name;

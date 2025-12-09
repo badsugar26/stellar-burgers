@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, nanoid } from '@reduxjs/toolkit';
 import { TIngredient } from '@utils-types';
 
 export type TConstructorIngredientWithId = TIngredient & { id: string };
@@ -20,13 +20,15 @@ const burgerConstructorSlice = createSlice({
     addBun: (state, action: PayloadAction<TIngredient>) => {
       state.bun = action.payload;
     },
-    addIngredient: (state, action: PayloadAction<TIngredient>) => {
-      const id = `${Date.now()}_${state.ingredients.length}`;
-
-      state.ingredients.push({
-        ...action.payload,
-        id
-      });
+    addIngredient: {
+      // Используем prepare для генерации уникального id
+      reducer: (state, action: PayloadAction<TIngredient & { id: string }>) => {
+        state.ingredients.push(action.payload);
+      },
+      prepare: (ingredient: TIngredient) => {
+        const id = nanoid(); // Генерируем уникальный id
+        return { payload: { ...ingredient, id } };
+      }
     },
     removeIngredient: (state, action: PayloadAction<string>) => {
       state.ingredients = state.ingredients.filter(
@@ -55,4 +57,5 @@ export const {
   moveIngredient,
   clearConstructor
 } = burgerConstructorSlice.actions;
+
 export default burgerConstructorSlice.reducer;
