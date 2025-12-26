@@ -1,7 +1,31 @@
 describe('Ingredients API Intercept', () => {
+  // Константы для селекторов
+  const INGREDIENT_SELECTOR = 'div, li, article';
+  const ADD_BUTTON_TEXT = 'Добавить';
+  const ORDER_BUTTON_TEXT = /оформить заказ/i;
+
+  // Константы для текстов ингредиентов
+  const BUN_TEXT = /краторная/i;
+  const MAIN_TEXT = /биокотлета/i;
+  const SAUCE_TEXT = /Соус Spicy-X/i;
+
+  // Константы для проверок
+  const TOP_TEXT = /верх/i;
+  const BOTTOM_TEXT = /низ/i;
+  const ORDER_DETAILS_TEXT = 'идентификатор заказа';
+  const ORDER_READY_TEXT = 'Ваш заказ начали готовить';
+  const ORDER_WAIT_TEXT = 'Дождитесь готовности на орбитальной станции';
+  const SELECT_BUNS_TEXT = 'Выберите булки';
+  const SELECT_FILLING_TEXT = 'Выберите начинку';
+
+  // Константы для таймаутов
+  const DEFAULT_TIMEOUT = 5000;
+  const LONG_TIMEOUT = 10000;
+  const VERY_LONG_TIMEOUT = 15000;
+
   beforeEach(() => {
     // Перехват GET запроса за ингредиентами
-    cy.intercept('GET', 'https://norma.education-services.ru/api/ingredients', {
+    cy.intercept('GET', '**/api/ingredients', {
       fixture: 'ingredients.json'
     }).as('getIngredients');
 
@@ -11,7 +35,7 @@ describe('Ingredients API Intercept', () => {
     }).as('getUser');
 
     // Перехват POST запроса создания заказа
-    cy.intercept('POST', 'https://norma.education-services.ru/api/orders', {
+    cy.intercept('POST', '**/api/orders', {
       fixture: 'order.json'
     }).as('createOrder');
 
@@ -26,58 +50,66 @@ describe('Ingredients API Intercept', () => {
     cy.wait('@getUser');
   });
 
+  // Вспомогательная функция для добавления ингредиента
+  const addIngredient = (ingredientText: RegExp | string) => {
+    cy.contains(ingredientText, { timeout: LONG_TIMEOUT })
+      .should('be.visible')
+      .parents(INGREDIENT_SELECTOR)
+      .first()
+      .within(() => {
+        cy.get('button')
+          .contains(ADD_BUTTON_TEXT, { timeout: DEFAULT_TIMEOUT })
+          .should('be.visible')
+          .click();
+      });
+  };
+
+  // Вспомогательная функция для проверки видимости элемента
+  const shouldBeVisible = (
+    text: RegExp | string,
+    timeout = DEFAULT_TIMEOUT
+  ) => {
+    cy.contains(text, { timeout }).should('be.visible');
+  };
+
   it('should intercept ingredients API and return mock data', () => {
     // Просто проверяем, что запрос был перехвачен
     cy.get('@getIngredients.all').should('have.length', 4);
 
     // И что данные отображаются
-    cy.contains('Краторная булка N-200i').should('be.visible');
+    shouldBeVisible('Краторная булка N-200i');
   });
 
   it('should add bun to constructor', () => {
-    // Находим элемент с ингредиентом (булкой)
-    cy.contains(/краторная/i)
-      .parents('div, li, article')
-      .first()
-      .within(() => {
-        // Нажимаем на кнопку "Добавить"
-        cy.get('button').contains('Добавить').click();
-      });
+    // Находим элемент с ингредиентом (булкой) и добавляем
+    addIngredient(BUN_TEXT);
 
     // Проверяем, что булка была добавлена в конструктор
-    cy.contains(/верх/i).should('be.visible');
-    cy.contains(/низ/i).should('be.visible');
+    shouldBeVisible(TOP_TEXT);
+    shouldBeVisible(BOTTOM_TEXT);
 
-    cy.contains(/биокотлета/i)
-      .parents('div, li, article')
-      .first()
-      .within(() => {
-        cy.get('button').contains('Добавить').click();
-      });
+    // Добавляем начинку
+    addIngredient(MAIN_TEXT);
 
-    // Ищем в правой колонке (конструкторе)
-    cy.contains(/Соус Spicy-X/i).should('be.visible');
+    // Проверяем соус в списке (не в конструкторе)
+    shouldBeVisible(SAUCE_TEXT);
 
-    cy.contains(/Соус Spicy-X/i)
-      .parents('div, li, article')
-      .first()
-      .within(() => {
-        cy.get('button').contains('Добавить').click();
-      });
+    // Добавляем соус
+    addIngredient(SAUCE_TEXT);
 
-    // Ищем в правой колонке (конструкторе)
-    cy.contains(/Соус Spicy-X/i).should('be.visible');
+    // Проверяем соус в конструкторе
+    shouldBeVisible(SAUCE_TEXT);
   });
 
   it('should open ingredient modal on click', () => {
-    // Кликаем на ингредиент - ищем по тексту
-    cy.contains(/краторная/i).click();
+    // Кликаем на ингредиент
+    cy.contains(BUN_TEXT).click();
 
-    // Модальное окно можно найти по тексту заголовка
-    cy.contains('Детали ингредиента', { timeout: 5000 }).should('be.visible');
+    // Проверяем модальное окно
+    shouldBeVisible('Детали ингредиента', LONG_TIMEOUT);
 
+    // Закрываем модальное окно
     cy.get('button').then(($buttons) => {
-      // Ищем по классу, который может содержать "close"
       const closeBtn = $buttons
         .filter((i, btn) => {
           const className = btn.className || '';
@@ -98,91 +130,53 @@ describe('Ingredients API Intercept', () => {
     cy.wait(1000);
 
     // 1. Добавляем булку
-    cy.contains(/краторная/i, { timeout: 10000 })
-      .should('be.visible')
-      .parents('div, li, article')
-      .first()
-      .within(() => {
-        // Ждем пока кнопка станет видимой
-        cy.get('button')
-          .contains('Добавить', { timeout: 5000 })
-          .should('be.visible')
-          .click();
-      });
+    addIngredient(BUN_TEXT);
 
     // 2. Проверяем булку в конструкторе
-    cy.contains(/верх/i, { timeout: 5000 }).should('be.visible');
-    cy.contains(/низ/i, { timeout: 5000 }).should('be.visible');
+    shouldBeVisible(TOP_TEXT);
+    shouldBeVisible(BOTTOM_TEXT);
 
     // 3. Добавляем начинку
-    cy.contains(/биокотлета/i, { timeout: 5000 })
-      .should('be.visible')
-      .parents('div, li, article')
-      .first()
-      .within(() => {
-        cy.get('button')
-          .contains('Добавить', { timeout: 5000 })
-          .should('be.visible')
-          .click();
-      });
+    addIngredient(MAIN_TEXT);
 
     // 4. Проверяем начинку в конструкторе
-    cy.contains('Биокотлета из марсианской Магнолии', { timeout: 5000 }).should(
-      'be.visible'
-    );
+    shouldBeVisible('Биокотлета из марсианской Магнолии');
 
     // 5. Добавляем соус
-    cy.contains(/Соус Spicy-X/i, { timeout: 5000 })
-      .should('be.visible')
-      .parents('div, li, article')
-      .first()
-      .within(() => {
-        cy.get('button')
-          .contains('Добавить', { timeout: 5000 })
-          .should('be.visible')
-          .click();
-      });
+    addIngredient(SAUCE_TEXT);
 
     // 6. Проверяем соус в конструкторе
-    cy.contains('Соус Spicy-X', { timeout: 5000 }).should('be.visible');
+    shouldBeVisible(SAUCE_TEXT);
 
-    // 7. Проверяем что кнопка заказа активна
-    cy.contains('button', /оформить заказ/i, { timeout: 5000 })
+    // 7. Проверяем что кнопка заказа активна и кликаем
+    cy.contains('button', ORDER_BUTTON_TEXT, { timeout: DEFAULT_TIMEOUT })
       .should('be.visible')
       .should('not.be.disabled')
       .click();
 
-    // 8. Ждем создания заказа с увеличенным таймаутом
-    cy.wait('@createOrder', { timeout: 15000 }).then((interception) => {
-      const orderNumber = interception.response?.body.order.number;
+    // 8. Ждем создания заказа
+    cy.wait('@createOrder', { timeout: VERY_LONG_TIMEOUT }).then(
+      (interception) => {
+        const orderNumber = interception.response?.body.order.number;
 
-      // 9. Проверяем модальное окно
-      cy.contains('идентификатор заказа', { timeout: 10000 }).should(
-        'be.visible'
-      );
-
-      cy.contains(orderNumber.toString(), { timeout: 5000 }).should(
-        'be.visible'
-      );
-
-      cy.contains('Ваш заказ начали готовить', { timeout: 5000 }).should(
-        'be.visible'
-      );
-
-      cy.contains('Дождитесь готовности на орбитальной станции', {
-        timeout: 5000
-      }).should('be.visible');
-    });
+        // 9. Проверяем модальное окно
+        shouldBeVisible(ORDER_DETAILS_TEXT, LONG_TIMEOUT);
+        shouldBeVisible(orderNumber.toString());
+        shouldBeVisible(ORDER_READY_TEXT);
+        shouldBeVisible(ORDER_WAIT_TEXT);
+      }
+    );
 
     // 10. Закрываем модальное окно
     cy.get('body').click(10, 10);
 
     // 11. Проверяем закрытие
-    cy.contains('идентификатор заказа', { timeout: 5000 }).should('not.exist');
+    cy.contains(ORDER_DETAILS_TEXT, { timeout: DEFAULT_TIMEOUT }).should(
+      'not.exist'
+    );
 
     // 12. Проверяем очистку конструктора
-    cy.contains('Выберите булки', { timeout: 5000 }).should('be.visible');
-
-    cy.contains('Выберите начинку', { timeout: 5000 }).should('be.visible');
+    shouldBeVisible(SELECT_BUNS_TEXT);
+    shouldBeVisible(SELECT_FILLING_TEXT);
   });
 });
